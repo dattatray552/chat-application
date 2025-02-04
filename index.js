@@ -1,20 +1,27 @@
-//node server which will handle socket io connection
-const io = require("socket.io")(8000)
-const users = {};
 
-io.on('connection',socket=>{
-    socket.on('new-user-joined', name=>{
-        // console.log("new user",name);
-        users[socket.id]  = name;
-        socket.broadcast.emit('user-joined', name);
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
+
+app.use(express.static('public'));
+
+io.on('connection', (socket)=>{
+    console.log("New user connected :", socket.id);
+
+    socket.on('chatMessage',(message)=>{
+        io.emit('chatMessage',{user: socket.id,message});
     });
 
-socket.on('send',message =>{
-    socket.broadcast.emit('receive',{message:message,name:user[socket.id]})
+    socket.on('disconnect',()=>{
+        console.log("User disconnected :",socket.id);
+    });
+});
 
+const port=3000;
+server.listen(port,()=>{
+    console.log(`server running on port : ${port}`);
 });
-socket.on('disconnect',message=>{
-    socket.broadcast.emit('left',users[socket.id]);
-    delete users[socket.id]
-});
-})
